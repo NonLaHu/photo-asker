@@ -1,0 +1,13 @@
+#!/bin/sh
+# Photo Asker launcher
+# Ensures Qt uses xcb under Wayland (opencv-python bundled Qt lacks wayland plugin)
+export QT_QPA_PLATFORM=xcb
+
+# Resolve absolute path to project root
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+if command -v uv >/dev/null 2>&1; then
+    exec uv run "$SCRIPT_DIR/photo_asker.py" "$@"
+else
+    exec python3 "$SCRIPT_DIR/photo_asker.py" "$@"
+fi

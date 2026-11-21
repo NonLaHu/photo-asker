@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "photo-asker"
+version = "0.1.0"
+description = "Instant camera snapshot-to-Gemini automation tool"
+readme = "README.md"
+authors = [
+    { name = "NonLaHu", email = "nainglintun50211@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
+    "pynput>=1.7.0",
+]
+
+[project.scripts]
+photo-asker = "photo_asker:main"
