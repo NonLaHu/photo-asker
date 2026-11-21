@@ -3,8 +3,9 @@
 # Ensures Qt uses xcb under Wayland (opencv-python bundled Qt lacks wayland plugin)
 export QT_QPA_PLATFORM=xcb
 
-# Resolve absolute path to project root
-SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+# Resolve absolute path to project root (handling symlinks)
+TARGET="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$TARGET")/.." && pwd)"
 
 if command -v uv >/dev/null 2>&1; then
     exec uv run "$SCRIPT_DIR/photo_asker.py" "$@"
