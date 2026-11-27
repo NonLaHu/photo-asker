@@ -57,12 +57,13 @@ def notify(title: str, message: str, icon: str = "camera-photo"):
 def copy_image_to_clipboard(png_bytes: bytes, file_path: Path) -> bool:
     """
     Copies PNG image data to system clipboard.
-    Supports Wayland (wl-copy) and X11/Xwayland (xclip).
+    Uses native Wayland (wl-copy) if under Wayland.
+    Only falls back to X11 (xclip) non-blocking if wl-copy is unavailable.
     """
     copied = False
 
-    # 1. Wayland native clipboard (wl-copy)
-    if shutil.which("wl-copy"):
+    # 1. Native Wayland clipboard (wl-copy)
+    if os.environ.get("WAYLAND_DISPLAY") and shutil.which("wl-copy"):
         try:
             proc = subprocess.Popen(
                 ["wl-copy", "-t", "image/png"],
@@ -70,16 +71,16 @@ def copy_image_to_clipboard(png_bytes: bytes, file_path: Path) -> bool:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            proc.communicate(input=png_bytes)
+            proc.communicate(input=png_bytes, timeout=3.0)
             if proc.returncode == 0:
                 copied = True
         except Exception as e:
             print(f"[Warning] wl-copy error: {e}", file=sys.stderr)
 
-    # 2. X11 clipboard (xclip) for compatibility
-    if shutil.which("xclip"):
+    # 2. X11 clipboard fallback (non-blocking Popen so it never hangs)
+    if not copied and shutil.which("xclip"):
         try:
-            subprocess.run(
+            subprocess.Popen(
                 [
                     "xclip",
                     "-selection",
@@ -89,13 +90,12 @@ def copy_image_to_clipboard(png_bytes: bytes, file_path: Path) -> bool:
                     "-i",
                     str(file_path),
                 ],
-                check=False,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
             copied = True
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Warning] xclip error: {e}", file=sys.stderr)
 
     return copied
 
@@ -403,8 +403,8 @@ def run_photo_asker(
     camera_index: int = 0,
     mirror: bool = True,
     default_prompt: str = "",
-    page_load_delay: float = 2.2,
-    upload_delay: float = 3.0,
+    page_load_delay: float = 2.8,
+    upload_delay: float = 3.5,
     flip_before_send: bool = True,
     flip_vertical: bool = False,
 ):
@@ -581,14 +581,14 @@ def main():
     parser.add_argument(
         "--page-delay",
         type=float,
-        default=2.2,
-        help="Seconds to wait after Gemini page loads before pasting (default: 2.2)",
+        default=2.8,
+        help="Seconds to wait after Gemini page loads before pasting (default: 2.8)",
     )
     parser.add_argument(
         "--upload-delay",
         type=float,
-        default=3.0,
-        help="Seconds to wait for image upload to complete before hitting Enter (default: 3.0)",
+        default=3.5,
+        help="Seconds to wait for image upload to complete before hitting Enter (default: 3.5)",
     )
     parser.add_argument(
         "--listen",
